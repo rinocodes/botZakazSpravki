@@ -93,8 +93,9 @@ func (bot *TeleGoBot) RunLongPolling() {
 			// 			fromid = message.HandlerFunction.From.Id
 			// 		}
 			if messageData == "" {
-				messageType = "Text"
+				messageType = "text"
 				messageData = message.Message.Text
+				userID = message.Message.From.Id
 			}
 
 			inValue := make([]reflect.Value, 4)

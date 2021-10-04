@@ -23,63 +23,90 @@ func main() {
 
 func Start(messageType string, messageData string, userID int, messageID int) {
 
-	if messageType == "bot_command" {
+	switch messageType {
+
+	case "bot_command":
 		telegobot.SendMessage("Hi Olesia", userID)
+	case "text":
+		if messageData == "Привет" {
+			telegobot.SendMessage("Привет, как тебя зовут?", userID)
+		} else {
+			telegobot.SendMessage("Тебя зовут "+messageData, userID)
+		}
+		// telegobot.SendMessage("You say "+messageData, userID)
 
-		// 	inCache := ba.Cache.Get(strconv.Itoa(fromid))
-		// 	if inCache == nil {
-		// 		// var mess urlstruct.Message
-		// 		// mess.ChatID = fromid
-		// 		// mess.Text = `Действие не распознано, нажмите /start`
-		// 		// ba.SendMessage(mess)
-		// 		// return
-		// 	} else {
-		// 		switch messageData {
-		// 		case "СertificateCopyOfTheEmploymentRecord":
-		// 			// outgoingMessage.Тип = "КопияТрудовойКнижки"
+		// case time.Wednesday:
+		//     fmt.Println("Сегодня среда.")
 
-		// 			newKeyboard := keyboard.GetNewKeyboardByDefault()
-		// 			newKeyboard.AddInlineKeyboardButton("1", "QuantityOne")
-		// 			newKeyboard.AddInlineKeyboardButton("2", "QuantityTwo")
-		// 			newKeyboard.AddInlineKeyboardButton("3", "QuantityThree")
+		// case time.Thursday:
+		//     fmt.Println("Сегодня четверг.")
 
-		// 			var mess urlstruct.Message
-		// 			mess.ChatID = fromid
-		// 			mess.Text = `Укажите количество`
-		// 			mess.AddKeyboard(newKeyboard)
-		// 			ba.SendMessage(mess)
-		// 			// inCache
-		// 			iC := inCache.(urlstruct.ReqEmployee)
-		// 			iC.Certificate = "КопияТрудовойКнижки"
-		// 			ba.Cache.Set(strconv.Itoa(fromid), iC)
-		// 			return
-		// 			// println(inCache)
-		// 			// {
-		// 			// 	"GUIDСправки": "b8d07ce7-4033-4b67-a057-1ded697b5f28",
-		// 			// 	"НомерСправки": "b8d07ce7-4033-4b67-a057-1ded697b5f28",
-		// 			// 	"Тип": "Справка2НДФЛ",
-		// 			// 	"ДатаЗаказа": "2021-08-26T12:09:47.840216",
-		// 			// 	"GUIDСотрудника": "4d2f4606-b4dd-11e3-af64-005056a702bd",
-		// 			// 	"Количество": "2",
-		// 			// 	"Комментарий": "Заказ справки с чат-бота",
-		// 			// 	"ПериодСправкиДляПосольства": "",
-		// 			// 	"ФИОРебенка": "",
-		// 			// 	"ДатаРожденияРебенка": "",
-		// 			// 	"РасчетныйПериод": "2021",
-		// 			// 	"ИсточникЗаказа": "БотТелеграмм"
-		// 			// 	}
-		// 		case "QuantityOne":
-		// 			newUUID := uuid.New().String()
-		// 			outgoingMessage := urlstruct.OutgoingMessage{
-		// 				GUIDСправки:  newUUID,
-		// 				НомерСправки: newUUID,
-		// 				Тип:          "КопияТрудовойКнижки",
-		// 			}
-		// 			println(outgoingMessage)
-		// 		}
-		// }
+		// case time.Friday:
+		//     fmt.Println("Сегодня пятница.")
 
+		// case time.Saturday:
+		//     fmt.Println("Сегодня суббота.")
+
+		// case time.Sunday:
+		//     fmt.Println("Сегодня воскресенье.")
 	}
+	// }
+	// if messageType == "bot_command" {
+
+	// 	inCache := ba.Cache.Get(strconv.Itoa(fromid))
+	// 	if inCache == nil {
+	// 		// var mess urlstruct.Message
+	// 		// mess.ChatID = fromid
+	// 		// mess.Text = `Действие не распознано, нажмите /start`
+	// 		// ba.SendMessage(mess)
+	// 		// return
+	// 	} else {
+	// 		switch messageData {
+	// 		case "СertificateCopyOfTheEmploymentRecord":
+	// 			// outgoingMessage.Тип = "КопияТрудовойКнижки"
+
+	// 			newKeyboard := keyboard.GetNewKeyboardByDefault()
+	// 			newKeyboard.AddInlineKeyboardButton("1", "QuantityOne")
+	// 			newKeyboard.AddInlineKeyboardButton("2", "QuantityTwo")
+	// 			newKeyboard.AddInlineKeyboardButton("3", "QuantityThree")
+
+	// 			var mess urlstruct.Message
+	// 			mess.ChatID = fromid
+	// 			mess.Text = `Укажите количество`
+	// 			mess.AddKeyboard(newKeyboard)
+	// 			ba.SendMessage(mess)
+	// 			// inCache
+	// 			iC := inCache.(urlstruct.ReqEmployee)
+	// 			iC.Certificate = "КопияТрудовойКнижки"
+	// 			ba.Cache.Set(strconv.Itoa(fromid), iC)
+	// 			return
+	// 			// println(inCache)
+	// 			// {
+	// 			// 	"GUIDСправки": "b8d07ce7-4033-4b67-a057-1ded697b5f28",
+	// 			// 	"НомерСправки": "b8d07ce7-4033-4b67-a057-1ded697b5f28",
+	// 			// 	"Тип": "Справка2НДФЛ",
+	// 			// 	"ДатаЗаказа": "2021-08-26T12:09:47.840216",
+	// 			// 	"GUIDСотрудника": "4d2f4606-b4dd-11e3-af64-005056a702bd",
+	// 			// 	"Количество": "2",
+	// 			// 	"Комментарий": "Заказ справки с чат-бота",
+	// 			// 	"ПериодСправкиДляПосольства": "",
+	// 			// 	"ФИОРебенка": "",
+	// 			// 	"ДатаРожденияРебенка": "",
+	// 			// 	"РасчетныйПериод": "2021",
+	// 			// 	"ИсточникЗаказа": "БотТелеграмм"
+	// 			// 	}
+	// 		case "QuantityOne":
+	// 			newUUID := uuid.New().String()
+	// 			outgoingMessage := urlstruct.OutgoingMessage{
+	// 				GUIDСправки:  newUUID,
+	// 				НомерСправки: newUUID,
+	// 				Тип:          "КопияТрудовойКнижки",
+	// 			}
+	// 			println(outgoingMessage)
+	// 		}
+	// }
+
+	// }
 
 	// var mess urlstruct.Message
 	// mess.ChatID = fromid
