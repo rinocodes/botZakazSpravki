@@ -25,7 +25,10 @@ func Start(messageType string, messageData string, userID int, messageID int) {
 
 	switch messageType {
 
-	case "bot_command":
+	case "botCommand":
+		if messageData == "/start" {
+
+		}
 		telegobot.SendMessage("Hi Olesia", userID)
 	case "text":
 		if messageData == "Привет" {
