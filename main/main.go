@@ -26,15 +26,24 @@ func Start(messageType string, messageData string, userID int, messageID int) {
 	switch messageType {
 
 	case "botCommand":
+
 		if messageData == "/start" {
 
+			telegobot.SendMessage("Укажите место работы", userID, nil)
+			keyboard := telegobot.NewKeyboard()
+			keyboard.AddInlineButtonBelow("НИТУ «МИСиС»", "OrganizationMISIS")
+			keyboard.AddInlineButtonBelow("СТИ НИТУ «МИСиС»", "OrganizationMISIS")
+
+			telegobot.SendMessage("Hi Olesia", userID, keyboard)
+
 		}
-		telegobot.SendMessage("Hi Olesia", userID)
+
 	case "text":
+
 		if messageData == "Привет" {
-			telegobot.SendMessage("Привет, как тебя зовут?", userID)
+			telegobot.SendMessage("Привет, как тебя зовут?", userID, nil)
 		} else {
-			telegobot.SendMessage("Тебя зовут "+messageData, userID)
+			telegobot.SendMessage("Тебя зовут "+messageData, userID, nil)
 		}
 		// telegobot.SendMessage("You say "+messageData, userID)
 
