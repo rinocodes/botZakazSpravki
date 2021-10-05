@@ -150,7 +150,7 @@ func SendMessage(messageText string, userID int, keyboard interface{}) {
 		replyMarkupStr := string(replyMarkup)
 		urlGetUpdates = urlGetUpdates + "&reply_markup=" + replyMarkupStr
 		urlGetUpdates = strings.Replace(urlGetUpdates, `"keyboard":null,`, `"keyboard": [],`, -1)
-		urlGetUpdates = strings.Replace(urlGetUpdates, `"inline_keyboard":null,`, `"inline_keyboard": [],`, -1)
+		urlGetUpdates = strings.Replace(urlGetUpdates, `"inline_keyboard":null`, `"inline_keyboard": []`, -1)
 	}
 
 	fmt.Println(string(urlGetUpdates))

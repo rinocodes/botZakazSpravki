@@ -28,6 +28,23 @@ func (k *Keyboard) AddInlineButtonBelow(text, callbackdata string) {
 
 }
 
+func (k *Keyboard) AddButtonRequestContact(text string) {
+
+	newButton := KeyboardButton{}
+	newButton.Text = text
+	newButton.RequestContact = true
+	k.ResizeKeyboard = false
+
+	newButtonSlice := []KeyboardButton{}
+	newButtonSlice = append(newButtonSlice, newButton)
+
+	k.KeyboardButtons = append(k.KeyboardButtons, newButtonSlice)
+
+}
+
+func (k *Keyboard) Add() {
+
+}
 func NewKeyboard() Keyboard {
 
 	newKeyboard := Keyboard{}
@@ -82,9 +99,6 @@ func NewKeyboard() Keyboard {
 // 	newKeyboardButton := KeyboardButton{}
 // 	var newKeyboardButtonArray []KeyboardButton
 // 	var newKeyboardButtonArrayArray [][]KeyboardButton
-
-// 	newKeyboardButton["text"] = text
-// 	newKeyboardButton["request_contact"] = true
 
 // 	newKeyboardButtonArray = append(newKeyboardButtonArray, newKeyboardButton)
 // 	newKeyboardButtonArrayArray = append(newKeyboardButtonArrayArray, newKeyboardButtonArray)

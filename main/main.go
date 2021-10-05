@@ -1,11 +1,11 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"strings"
 
+	"bot/cache"
 	"bot/telegobot"
 
 	"github.com/joho/godotenv"
@@ -13,6 +13,10 @@ import (
 
 func main() {
 
+	//Initialize the cache
+	cache.InitUsersCacheByDefault()
+
+	//Create a new bot
 	bot := telegobot.NewBot(300)
 	if err := godotenv.Load(); err != nil {
 		log.Fatalln(err)
@@ -25,18 +29,25 @@ func main() {
 
 func Start(messageType string, messageData string, userID int, messageID int) {
 
+	userCache := cache.GetUserCache(userID)
+
 	switch messageType {
 
 	case "botCommand":
 
 		if messageData == "/start" {
 
-			// telegobot.SendMessage("Укажите место работы", userID, nil)
-			keyboard := telegobot.NewKeyboard()
-			keyboard.AddInlineButtonBelow("НИТУ «МИСиС»", "OrganizationMISIS")
-			keyboard.AddInlineButtonBelow("СТИ НИТУ «МИСиС»", "OrganizationSTIMISIS")
+			if userCache == nil {
 
-			telegobot.SendMessage("Выберите место работы:", userID, keyboard)
+				keyboard := telegobot.NewKeyboard()
+				keyboard.AddInlineButtonBelow("НИТУ «МИСиС»", "OrganizationMISIS")
+				keyboard.AddInlineButtonBelow("СТИ НИТУ «МИСиС»", "OrganizationSTIMISIS")
+
+				telegobot.SendMessage("Выберите место работы:", userID, keyboard)
+
+			} else {
+				telegobot.SendMessage("You are logged in", userID, nil)
+			}
 
 		}
 
@@ -51,9 +62,25 @@ func Start(messageType string, messageData string, userID int, messageID int) {
 	case "callbackData":
 		if strings.Contains(messageData, "Organization") {
 			OrganizationStr := strings.Replace(messageData, "Organization", "", 1)
-			fmt.Println(OrganizationStr)
+			userCache := cache.SetUserCache(userID)
+			userCache.UserData.Organization = OrganizationStr
+			messageText := `Добрый день, уважаемые коллеги!` +
+				`%0AДля получения доступа к функциям чат-бота, потвердите личность, нажав на кнопку "Отправить номер телефона"` +
+				`%0A%0AКнопка находится под строкой ввода сообщения` +
+				`%0A%F0%9F%91%87 %F0%9F%91%87 %F0%9F%91%87 %F0%9F%91%87 %F0%9F%91%87 %F0%9F%91%87 %F0%9F%91%87 %F0%9F%91%87 %F0%9F%91%87 %F0%9F%91%87`
+			keyboard := telegobot.NewKeyboard()
+			keyboard.AddButtonRequestContact("Отправить номер телефона")
+			telegobot.SendMessage(messageText, userID, keyboard)
+
+			// }else if {
+
 		}
-		// fmt.Println("Сегодня воскресенье.")
+	case "contact":
+		if userCache != nil {
+
+		} else {
+			telegobot.SendMessage("Ваша сообщение не распознано, для заказа справки нажмите /start", userID, nil)
+		}
 	}
 	// }
 	// if messageType == "bot_command" {

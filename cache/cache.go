@@ -5,40 +5,46 @@ import (
 	"time"
 )
 
-var pointertocache *cache
+var pointerToCache *cache
 
-type userData struct {
-	organization string
+type orderDetails struct {
+	Organization string
+	EmployeeGUID string
 }
 
-type userCache struct {
-	userData   userData
-	created    time.Time
-	expiration int
+type UserCache struct {
+	UserData orderDetails
+	created  time.Time
 }
 
 type cache struct {
 	sync.RWMutex
 	defaultExpiration time.Duration
 	cleanupInterval   time.Duration
-	userCache         map[int]userCache
+	UserCache         map[int]UserCache
 }
 
-func InitUsersCacheByDefault() *cache {
+func InitUsersCacheByDefault() {
 
 	newCache := cache{}
 	newCache.defaultExpiration = 10 * time.Minute
 	newCache.cleanupInterval = 2 * time.Minute
-
-	pointertocache = &newCache
-
-	return &newCache
+	newCache.UserCache = make(map[int]UserCache)
+	pointerToCache = &newCache
 
 }
 
-func AddUserCache(defaultExpiration, cleanupInterval time.Duration) {
+func SetUserCache(userID int) *UserCache {
 
-	// userCache := make(map[string]userCache)
+	cache := pointerToCache
+
+	cache.Lock()
+	defer cache.Unlock()
+
+	newUserCache := UserCache{}
+	newUserCache.created = time.Now()
+
+	cache.UserCache[userID] = newUserCache
 
 	// cache := Cache{
 	// 	items:             items,
@@ -51,8 +57,51 @@ func AddUserCache(defaultExpiration, cleanupInterval time.Duration) {
 	// 	cache.StartGarbageCollection() // данный метод рассматривается ниже
 	// }
 
-	// return &cache
+	return &newUserCache
+
 }
+
+func GetUserCache(userID int) *UserCache {
+
+	cache := pointerToCache
+
+	cache.RLock()
+	defer cache.RUnlock()
+
+	foundUserCache, found := cache.UserCache[userID]
+
+	if !found || time.Now().UnixNano() > foundUserCache.created.Add(cache.defaultExpiration).UnixNano() {
+		return nil
+	}
+
+	return &foundUserCache
+
+}
+
+// func (c *Cache) Set(key string, value interface{}) {
+
+// 	var expiration int64
+
+// 	// Если продолжительность жизни равна 0 - используется значение по-умолчанию
+
+// 	duration := c.defaultExpiration
+
+// 	// Устанавливаем время истечения кеша
+// 	if duration > 0 {
+// 		expiration = time.Now().Add(duration).UnixNano()
+// 	}
+
+// 	c.Lock()
+
+// 	defer c.Unlock()
+
+// 	c.items[key] = Item{
+// 		Value:      value,
+// 		Expiration: expiration,
+// 		Created:    time.Now(),
+// 	}
+
+// }
 
 // func (c *Cache) Set(key string, value interface{}) {
 
