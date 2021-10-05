@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -75,28 +76,29 @@ func (bot *TeleGoBot) RunLongPolling() {
 			var userID int
 			var messageType string
 			messageID := message.Update_id
-			for _, entity := range message.Message.Entities {
-				if entity.Type == "bot_command" {
-					messageType = entity.Type
-					messageData = message.Message.Text
-					userID = message.Message.From.Id
-				}
+			if message.Message.Text != "" && strings.HasPrefix(message.Message.Text, "/") {
+				messageType = "botCommand"
+				messageData = message.Message.Text
+				userID = message.Message.From.Id
+			} else if message.Message.Text != "" {
+				messageType = "text"
+				messageData = message.Message.Text
+				userID = message.Message.From.Id
+			} else if message.Message.Contact.Phone_number != "" {
+				messageType = "contact"
+				messageData = message.Message.Contact.Phone_number
+				userID = message.Message.From.Id
+			} else if message.HandlerFunction.Name != "" {
+				messageType = "callbackData"
+				messageData = message.HandlerFunction.Name
+				userID = message.HandlerFunction.From.Id
 			}
-			// 		if message.Message.Contact.Phone_number != "" {
-			// 			incomingMessages.Result[imess].Type = "Contact"
-			// 			messageData = message.Message.Contact.Phone_number
-			// 			fromid = message.Message.From.Id
-			// 		}
+
 			// 		if message.HandlerFunction.Name != "" {
 			// 			incomingMessages.Result[imess].Type = "CallbackData"
 			// 			messageData = message.HandlerFunction.Name
 			// 			fromid = message.HandlerFunction.From.Id
 			// 		}
-			if messageData == "" {
-				messageType = "text"
-				messageData = message.Message.Text
-				userID = message.Message.From.Id
-			}
 
 			inValue := make([]reflect.Value, 4)
 			inValue[0] = reflect.ValueOf(messageType)
@@ -138,14 +140,27 @@ func (bot *TeleGoBot) GetUpdates() IncomingMessages {
 
 }
 
-func SendMessage(messageText string, userID int) {
+func SendMessage(messageText string, userID int, keyboard interface{}) {
 
 	urlGetUpdates := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage?chat_id=%d&text=%s", pointbot.TeleToken, userID, messageText)
 
+	if keyboard, ok := keyboard.(Keyboard); ok {
+		fmt.Println(keyboard)
+		replyMarkup, _ := json.Marshal(keyboard)
+		replyMarkupStr := string(replyMarkup)
+		urlGetUpdates = urlGetUpdates + "&reply_markup=" + replyMarkupStr
+		urlGetUpdates = strings.Replace(urlGetUpdates, `"keyboard":null,`, `"keyboard": [],`, -1)
+		urlGetUpdates = strings.Replace(urlGetUpdates, `"inline_keyboard":null,`, `"inline_keyboard": [],`, -1)
+	}
+
+	fmt.Println(string(urlGetUpdates))
 	resp, err := pointbot.Client.Get(urlGetUpdates)
+
 	if err != nil {
 		log.Fatalln(err)
 	}
+	body, _ := ioutil.ReadAll(resp.Body)
+	fmt.Println(string(body))
 	defer resp.Body.Close()
 	// urlSendMessage := ba.Host + ba.TeleToken + ba.SendMessageAddress + strconv.Itoa(m.ChatID)
 	// if m.Text != "" {
@@ -159,6 +174,6 @@ func SendMessage(messageText string, userID int) {
 	// 	log.Fatalln(err)
 	// }
 	// body, err := ioutil.ReadAll(resp.Body)
-	// fmt.Println(string(body))
+	//
 
 }
