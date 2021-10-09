@@ -10,6 +10,7 @@ var pointerToCache *cache
 type orderDetails struct {
 	Organization string
 	EmployeeGUID string
+	PhoneNumber  string
 }
 
 type UserCache struct {

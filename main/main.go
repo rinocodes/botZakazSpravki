@@ -1,8 +1,12 @@
 package main
 
 import (
+	"fmt"
+	"io/ioutil"
 	"log"
+	"net/http"
 	"os"
+	"strconv"
 	"strings"
 
 	"bot/cache"
@@ -27,7 +31,7 @@ func main() {
 
 }
 
-func Start(messageType string, messageData string, userID int, messageID int) {
+func Start(messageType string, messageData string, userID int, messageID int, messageIDCallback int) {
 
 	userCache := cache.GetUserCache(userID)
 
@@ -71,12 +75,27 @@ func Start(messageType string, messageData string, userID int, messageID int) {
 			keyboard := telegobot.NewKeyboard()
 			keyboard.AddButtonRequestContact("Отправить номер телефона")
 			telegobot.SendMessage(messageText, userID, keyboard)
-
-			// }else if {
-
+			telegobot.DeleteMessage(userID, messageIDCallback)
+		} else if strings.Contains(messageData, "Сertificate") {
+			СertificateStr := strings.Replace(messageData, "Сertificate", "", 1)
+			fmt.Println(СertificateStr)
 		}
 	case "contact":
 		if userCache != nil {
+			userCache.UserData.PhoneNumber = messageData
+			SetEmployeeDataFromZKGU(userID, userCache.UserData.PhoneNumber)
+
+			keyboard := telegobot.NewKeyboard()
+			keyboard.AddInlineButtonBelow("Справка с места работы", "СertificateFromThePlaceOfWork")
+			keyboard.AddInlineButtonBelow("Копия трудовой книжки", "СertificateCopyOfTheEmploymentRecord")
+			keyboard.AddInlineButtonBelow("Справка 2 НДФЛ", "Сertificate2NDFL")
+			keyboard.AddInlineButtonBelow("Справка для посольства", "СertificateForTheEmbassy")
+			keyboard.AddInlineButtonBelow("Неполучении пособия до 1,5 лет", "Сertificate15years")
+			keyboard.AddInlineButtonBelow("Неполучении пособия до 3 лет", "Сertificate3years")
+			keyboard.AddInlineButtonBelow("Неполучении единовременного пособия", "СertificateNonReceipt")
+			keyboard.AddInlineButtonBelow("О заработке для расчета пособий", "СertificateForBenefits")
+
+			telegobot.SendMessage("Выберите тип справки:", userID, keyboard)
 
 		} else {
 			telegobot.SendMessage("Ваша сообщение не распознано, для заказа справки нажмите /start", userID, nil)
@@ -192,6 +211,30 @@ func Start(messageType string, messageData string, userID int, messageID int) {
 	// }
 
 	// ba.SendMessage(mess)
+
+}
+
+func SetEmployeeDataFromZKGU(userID int, phoneNumber string) (string, bool) {
+
+	login := os.Getenv("loginZKGU")
+	password := os.Getenv("passwordZKGU")
+	url := os.Getenv("urlZKGU")
+
+	client := &http.Client{}
+	req, _ := http.NewRequest("GET", url, nil)
+	req.SetBasicAuth(login, password)
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Phonenumber", phoneNumber)
+	req.Header.Set("userid", strconv.Itoa(userID))
+	resp, _ := client.Do(req)
+
+	body, _ := ioutil.ReadAll(resp.Body)
+	defer resp.Body.Close()
+
+	// incomingMessages.()["result"]
+	fmt.Println(string(body))
+
+	return "ok", true
 
 }
 
