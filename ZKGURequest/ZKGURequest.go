@@ -55,6 +55,7 @@ func SetEmployeeDataFromZKGU(userID int, phoneNumber string) (string, bool) {
 
 	userCache := cache.GetUserCache(userID)
 	userCache.UserData.IO = responseMessage.Data.IO
+	cache.SaveUserCache(userID, userCache)
 	for _, employee := range responseMessage.Data.ArrayOfEmployees {
 		userCache.UserData.EmployeeGUID = employee.GUIDEmployee
 		if employee.TypeOfEmployment == "Основное место работы" {

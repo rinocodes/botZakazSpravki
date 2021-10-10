@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime"
+	"strconv"
 	"strings"
 
 	zkgurequest "bot/ZKGURequest"
@@ -13,7 +15,13 @@ import (
 	"github.com/joho/godotenv"
 )
 
+type orderDetails struct {
+	typeOfCertificate string `json:"Тип"`
+}
+
 func main() {
+
+	runtime.GOMAXPROCS(2)
 
 	//Initialize the cache
 	cache.InitUsersCacheByDefault()
@@ -48,7 +56,7 @@ func Start(messageType string, messageData string, userID int, messageID int, me
 				telegobot.SendMessage("Выберите место работы:", userID, keyboard)
 
 			} else {
-				telegobot.SendMessage("You are logged in", userID, nil)
+				telegobot.SendMessage("Выберите тип справки:", userID, getKeyboardSelectionСertificate())
 			}
 
 		}
@@ -62,6 +70,7 @@ func Start(messageType string, messageData string, userID int, messageID int, me
 		}
 
 	case "callbackData":
+
 		if strings.Contains(messageData, "Organization") {
 			OrganizationStr := strings.Replace(messageData, "Organization", "", 1)
 			userCache := cache.SetUserCache(userID)
@@ -75,272 +84,119 @@ func Start(messageType string, messageData string, userID int, messageID int, me
 			keyboard.AddButtonRequestContact("Отправить номер телефона")
 			telegobot.SendMessage(messageText, userID, keyboard)
 			telegobot.DeleteMessage(userID, messageIDCallback)
+			return
+		}
+		if userCache == nil {
+			telegobot.SendMessage("Ваша сессия окончена, для заказа справки нажмите /start", userID, nil)
+			return
 		} else if strings.Contains(messageData, "Сertificate") {
 			СertificateStr := strings.Replace(messageData, "Сertificate", "", 1)
-			fmt.Println(СertificateStr)
+			userCache.UserData.Certificate = СertificateStr
+			cache.SaveUserCache(userID, userCache)
+			keyboard := telegobot.NewKeyboard()
+			keyboard.AddInlineButtonBelow("1", "Quantity1")
+			keyboard.AddInlineButtonBelow("2", "Quantity2")
+			keyboard.AddInlineButtonBelow("3", "Quantity3")
+
+			telegobot.EditMessage("Выберите количество:", userID, keyboard, messageIDCallback)
+		} else if strings.Contains(messageData, "Quantity") {
+			QuantityStr := strings.Replace(messageData, "Quantity", "", 1)
+			userCache.UserData.Quantity, _ = strconv.Atoi(QuantityStr)
+			cache.SaveUserCache(userID, userCache)
+			keyboard := telegobot.NewKeyboard()
+			keyboard.AddInlineButtonBelow("Да", "СonfirmationYes")
+			keyboard.AddInlineButtonBelow("Нет", "СonfirmationNo")
+
+			PresentationOfTheCertificateName := getPresentationOfTheCertificateName(userCache.UserData.Certificate)
+			messageText := fmt.Sprintf("Вы заказали: %s%s (%d шт.)", "%0A", PresentationOfTheCertificateName, userCache.UserData.Quantity)
+			telegobot.EditMessage(messageText, userID, keyboard, messageIDCallback)
+		} else if strings.Contains(messageData, "Сonfirmation") {
+			СonfirmationStr := strings.Replace(messageData, "Сonfirmation", "", 1)
+			switch СonfirmationStr {
+			case "Yes":
+				sendOrderingOfCertificate(userCache)
+			case "No":
+				messageText := "Робот НИТУ «МИСиС» желает Вам хорошего дня!%0A%0AЧтобы заказать новую справку нажмите /start"
+				telegobot.EditMessage(messageText, userID, nil, messageIDCallback)
+			}
 		}
 	case "contact":
 		if userCache != nil {
 			userCache.UserData.PhoneNumber = messageData
+
 			cache.SaveUserCache(userID, userCache)
 			details, ok := zkgurequest.SetEmployeeDataFromZKGU(userID, userCache.UserData.PhoneNumber)
+			userCache := cache.GetUserCache(userID)
 			if !ok {
 				telegobot.SendMessage(details, userID, nil)
 				return
 			}
 
-			keyboard := telegobot.NewKeyboard()
-			keyboard.AddInlineButtonBelow("Справка с места работы", "СertificateFromThePlaceOfWork")
-			keyboard.AddInlineButtonBelow("Копия трудовой книжки", "СertificateCopyOfTheEmploymentRecord")
-			keyboard.AddInlineButtonBelow("Справка 2 НДФЛ", "Сertificate2NDFL")
-			keyboard.AddInlineButtonBelow("Справка для посольства", "СertificateForTheEmbassy")
-			keyboard.AddInlineButtonBelow("Неполучении пособия до 1,5 лет", "Сertificate15years")
-			keyboard.AddInlineButtonBelow("Неполучении пособия до 3 лет", "Сertificate3years")
-			keyboard.AddInlineButtonBelow("Неполучении единовременного пособия", "СertificateNonReceipt")
-			keyboard.AddInlineButtonBelow("О заработке для расчета пособий", "СertificateForBenefits")
-
-			telegobot.SendMessage("Выберите тип справки:", userID, keyboard)
+			telegobot.SendMessage(userCache.UserData.IO+", Ваш номер телефона подтвержден.", userID, nil)
+			telegobot.SendMessage("Выберите тип справки:", userID, getKeyboardSelectionСertificate())
 
 		} else {
 			telegobot.SendMessage("Ваша сообщение не распознано, для заказа справки нажмите /start", userID, nil)
 		}
 	}
-	// }
-	// if messageType == "bot_command" {
-
-	// 	inCache := ba.Cache.Get(strconv.Itoa(fromid))
-	// 	if inCache == nil {
-	// 		// var mess urlstruct.Message
-	// 		// mess.ChatID = fromid
-	// 		// mess.Text = `Действие не распознано, нажмите /start`
-	// 		// ba.SendMessage(mess)
-	// 		// return
-	// 	} else {
-	// 		switch messageData {
-	// 		case "СertificateCopyOfTheEmploymentRecord":
-	// 			// outgoingMessage.Тип = "КопияТрудовойКнижки"
-
-	// 			newKeyboard := keyboard.GetNewKeyboardByDefault()
-	// 			newKeyboard.AddInlineKeyboardButton("1", "QuantityOne")
-	// 			newKeyboard.AddInlineKeyboardButton("2", "QuantityTwo")
-	// 			newKeyboard.AddInlineKeyboardButton("3", "QuantityThree")
-
-	// 			var mess urlstruct.Message
-	// 			mess.ChatID = fromid
-	// 			mess.Text = `Укажите количество`
-	// 			mess.AddKeyboard(newKeyboard)
-	// 			ba.SendMessage(mess)
-	// 			// inCache
-	// 			iC := inCache.(urlstruct.ReqEmployee)
-	// 			iC.Certificate = "КопияТрудовойКнижки"
-	// 			ba.Cache.Set(strconv.Itoa(fromid), iC)
-	// 			return
-	// 			// println(inCache)
-	// 			// {
-	// 			// 	"GUIDСправки": "b8d07ce7-4033-4b67-a057-1ded697b5f28",
-	// 			// 	"НомерСправки": "b8d07ce7-4033-4b67-a057-1ded697b5f28",
-	// 			// 	"Тип": "Справка2НДФЛ",
-	// 			// 	"ДатаЗаказа": "2021-08-26T12:09:47.840216",
-	// 			// 	"GUIDСотрудника": "4d2f4606-b4dd-11e3-af64-005056a702bd",
-	// 			// 	"Количество": "2",
-	// 			// 	"Комментарий": "Заказ справки с чат-бота",
-	// 			// 	"ПериодСправкиДляПосольства": "",
-	// 			// 	"ФИОРебенка": "",
-	// 			// 	"ДатаРожденияРебенка": "",
-	// 			// 	"РасчетныйПериод": "2021",
-	// 			// 	"ИсточникЗаказа": "БотТелеграмм"
-	// 			// 	}
-	// 		case "QuantityOne":
-	// 			newUUID := uuid.New().String()
-	// 			outgoingMessage := urlstruct.OutgoingMessage{
-	// 				GUIDСправки:  newUUID,
-	// 				НомерСправки: newUUID,
-	// 				Тип:          "КопияТрудовойКнижки",
-	// 			}
-	// 			println(outgoingMessage)
-	// 		}
-	// }
-
-	// }
-
-	// var mess urlstruct.Message
-	// mess.ChatID = fromid
-
-	// // 	messageText := m.Message.Text
-	// if messageData == "/start" {
-
-	// 	newKeyboard := keyboard.Keyboard{}
-	// 	newKeyboard.ByDefault()
-	// 	newKeyboard.AddButtonRequestContact("Отправить номер телефона")
-	// 	// newKeyboard := keyboard.GetNewKeyboardByDefault()
-	// 	//
-	// 	// keyboard.AddButtonRequestContact(&newKeyboard, text)
-	// 	// 		// newKeyboard[]
-	// 	// 		// newKeyboard.ByDefault()
-	// 	// 		// newKeyboard.AddButtonRequestContact(`Отправить номер`)
-
-	// 	mess.Text = `Добрый день, уважаемые коллеги! Для получения доступа к функциям чат-бота, потвердите личность, нажав на кнопку "Отправить номер телефона"`
-	// 	mess.AddKeyboard(newKeyboard)
-	// 	// 		ba.SendMessage(mess)
-	// } else if messageType == "Contact" {
-
-	// 	// mess.Text = "Ваш номер телефона не найден в системе, добавьте его в личном кабинете или обратитесь в отдел кадров"
-
-	// 	reqEmp := urlstruct.GetЕmployeesData(messageData, strconv.Itoa(fromid))
-	// 	ba.Cache.Set(strconv.Itoa(fromid), reqEmp)
-	// 	if reqEmp.Data.IO != "" {
-	// 		newKeyboard := keyboard.GetNewKeyboardByDefault()
-	// 		newKeyboard.AddInlineKeyboardButton("Справка с места работы", "СertificateFromThePlaceOfWork")
-	// 		newKeyboard.AddInlineKeyboardButton("Справка 2 НДФЛ", "Сertificate2NDFL")
-	// 		newKeyboard.AddInlineKeyboardButton("Справка для посольства", "СertificateForTheEmbassy")
-	// 		newKeyboard.AddInlineKeyboardButton("Копия трудовой книжки", "СertificateCopyOfTheEmploymentRecord")
-	// 		newKeyboard.AddInlineKeyboardButton("Неполучении пособия до 1,5 лет", "Сertificate15years")
-	// 		newKeyboard.AddInlineKeyboardButton("Неполучении пособия до 3 лет", "Сertificate3years")
-	// 		newKeyboard.AddInlineKeyboardButton("Неполучении единовременного пособия", "СertificateNonReceipt")
-	// 		newKeyboard.AddInlineKeyboardButton("О заработке для расчета пособий", "СertificateForBenefits")
-
-	// 		mess.Text = reqEmp.Data.IO + ", ваш номер телефона подтвержден"
-	// 		ba.SendMessage(mess)
-
-	// 		mess.Text = "Выберите тип требуемой справки"
-	// 		mess.AddKeyboard(newKeyboard)
-	// 	} else {
-	// 		mess.Text = "Ваш номер телефона не найден в системе, добавьте его в личном кабинете или обратитесь в отдел кадров"
-	// 	}
-
-	// 	println(reqEmp.Data.IO)
-
-	// } else if messageType == "Text" {
-	// 	mess.Text = `Действие не распознано, нажмите /start`
-	// }
-
-	// ba.SendMessage(mess)
 
 }
 
-// func main() {
+func sendOrderingOfCertificate(userCache *cache.UserCache) {
 
-// 	if err := godotenv.Load(); err != nil {
-// 		log.Fatalln(err)
-// 	}
+	orderDetails := orderDetails{}
+	orderDetails.typeOfCertificate = getTypeOfCertificate(userCache.UserData.Certificate)
+	// "GUIDСправки": "b8d07ce7-4033-4b67-a057-1ded697b5f28",
+	// "НомерСправки": "b8d07ce7-4033-4b67-a057-1ded697b5f28",
+	// "Тип": "Справка2НДФЛ",
+	// "ДатаЗаказа": "2021-08-26T12:09:47.840216",
+	// "GUIDСотрудника": "4d2f4606-b4dd-11e3-af64-005056a702bd",
+	// "Количество": "2",
+	// "Комментарий": "Заказ справки с чат-бота",
+	// "ПериодСправкиДляПосольства": "",
+	// "ФИОРебенка": "",
+	// "ДатаРожденияРебенка": "",
+	// "РасчетныйПериод": "2021",
+	// "ИсточникЗаказа": "БотТелеграмм"
+	// }
 
-// 	var botApi urlstruct.BotApi
-// 	botApi.TeleToken = os.Getenv("teleToken")
-// 	botApi.ByDefault()
-// 	botApi.SetStartFunction(Start)
-// 	botApi.RunLongPolling()
-// }
+}
 
-// func Start(messageType string, messageData string, fromid int, ba urlstruct.BotApi) {
+func getTypeOfCertificate(presentationInEnglish string) string {
 
-// if messageType == "CallbackData" {
+	var presentationInRussian string
+	switch presentationInEnglish {
+	case "FromThePlaceOfWork":
+		presentationInRussian = "СправкаСМестаРаботы"
+	case "CopyOfTheEmploymentRecord":
+		presentationInRussian = "КопияТрудовойКнижки"
+	}
 
-// 	inCache := ba.Cache.Get(strconv.Itoa(fromid))
-// 	if inCache == nil {
-// 		// var mess urlstruct.Message
-// 		// mess.ChatID = fromid
-// 		// mess.Text = `Действие не распознано, нажмите /start`
-// 		// ba.SendMessage(mess)
-// 		// return
-// 	} else {
-// 		switch messageData {
-// 		case "СertificateCopyOfTheEmploymentRecord":
-// 			// outgoingMessage.Тип = "КопияТрудовойКнижки"
+	return presentationInRussian
+}
 
-// 			newKeyboard := keyboard.GetNewKeyboardByDefault()
-// 			newKeyboard.AddInlineKeyboardButton("1", "QuantityOne")
-// 			newKeyboard.AddInlineKeyboardButton("2", "QuantityTwo")
-// 			newKeyboard.AddInlineKeyboardButton("3", "QuantityThree")
+func getPresentationOfTheCertificateName(Certificate string) string {
 
-// 			var mess urlstruct.Message
-// 			mess.ChatID = fromid
-// 			mess.Text = `Укажите количество`
-// 			mess.AddKeyboard(newKeyboard)
-// 			ba.SendMessage(mess)
-// 			// inCache
-// 			iC := inCache.(urlstruct.ReqEmployee)
-// 			iC.Certificate = "КопияТрудовойКнижки"
-// 			ba.Cache.Set(strconv.Itoa(fromid), iC)
-// 			return
-// 			// println(inCache)
-// 			// {
-// 			// 	"GUIDСправки": "b8d07ce7-4033-4b67-a057-1ded697b5f28",
-// 			// 	"НомерСправки": "b8d07ce7-4033-4b67-a057-1ded697b5f28",
-// 			// 	"Тип": "Справка2НДФЛ",
-// 			// 	"ДатаЗаказа": "2021-08-26T12:09:47.840216",
-// 			// 	"GUIDСотрудника": "4d2f4606-b4dd-11e3-af64-005056a702bd",
-// 			// 	"Количество": "2",
-// 			// 	"Комментарий": "Заказ справки с чат-бота",
-// 			// 	"ПериодСправкиДляПосольства": "",
-// 			// 	"ФИОРебенка": "",
-// 			// 	"ДатаРожденияРебенка": "",
-// 			// 	"РасчетныйПериод": "2021",
-// 			// 	"ИсточникЗаказа": "БотТелеграмм"
-// 			// 	}
-// 		case "QuantityOne":
-// 			newUUID := uuid.New().String()
-// 			outgoingMessage := urlstruct.OutgoingMessage{
-// 				GUIDСправки:  newUUID,
-// 				НомерСправки: newUUID,
-// 				Тип:          "КопияТрудовойКнижки",
-// 			}
-// 			println(outgoingMessage)
-// 		}
-// 	}
+	var presentation string
+	switch Certificate {
+	case "FromThePlaceOfWork":
+		presentation = "Справка с места работы"
+	}
 
-// }
+	return presentation
+}
 
-// var mess urlstruct.Message
-// mess.ChatID = fromid
+func getKeyboardSelectionСertificate() telegobot.Keyboard {
 
-// // 	messageText := m.Message.Text
-// if messageData == "/start" {
+	keyboard := telegobot.NewKeyboard()
+	keyboard.AddInlineButtonBelow("Справка с места работы", "СertificateFromThePlaceOfWork")
+	keyboard.AddInlineButtonBelow("Копия трудовой книжки", "СertificateCopyOfTheEmploymentRecord")
+	keyboard.AddInlineButtonBelow("Справка 2 НДФЛ", "Сertificate2NDFL")
+	keyboard.AddInlineButtonBelow("Справка для посольства", "СertificateForTheEmbassy")
+	keyboard.AddInlineButtonBelow("Неполучении пособия до 1,5 лет", "Сertificate15years")
+	keyboard.AddInlineButtonBelow("Неполучении пособия до 3 лет", "Сertificate3years")
+	keyboard.AddInlineButtonBelow("Неполучении единовременного пособия", "СertificateNonReceipt")
+	keyboard.AddInlineButtonBelow("О заработке для расчета пособий", "СertificateForBenefits")
 
-// 	newKeyboard := keyboard.Keyboard{}
-// 	newKeyboard.ByDefault()
-// 	newKeyboard.AddButtonRequestContact("Отправить номер телефона")
-// 	// newKeyboard := keyboard.GetNewKeyboardByDefault()
-// 	//
-// 	// keyboard.AddButtonRequestContact(&newKeyboard, text)
-// 	// 		// newKeyboard[]
-// 	// 		// newKeyboard.ByDefault()
-// 	// 		// newKeyboard.AddButtonRequestContact(`Отправить номер`)
-
-// 	mess.Text = `Добрый день, уважаемые коллеги! Для получения доступа к функциям чат-бота, потвердите личность, нажав на кнопку "Отправить номер телефона"`
-// 	mess.AddKeyboard(newKeyboard)
-// 	// 		ba.SendMessage(mess)
-// } else if messageType == "Contact" {
-
-// 	// mess.Text = "Ваш номер телефона не найден в системе, добавьте его в личном кабинете или обратитесь в отдел кадров"
-
-// 	reqEmp := urlstruct.GetЕmployeesData(messageData, strconv.Itoa(fromid))
-// 	ba.Cache.Set(strconv.Itoa(fromid), reqEmp)
-// 	if reqEmp.Data.IO != "" {
-// 		newKeyboard := keyboard.GetNewKeyboardByDefault()
-// 		newKeyboard.AddInlineKeyboardButton("Справка с места работы", "СertificateFromThePlaceOfWork")
-// 		newKeyboard.AddInlineKeyboardButton("Справка 2 НДФЛ", "Сertificate2NDFL")
-// 		newKeyboard.AddInlineKeyboardButton("Справка для посольства", "СertificateForTheEmbassy")
-// 		newKeyboard.AddInlineKeyboardButton("Копия трудовой книжки", "СertificateCopyOfTheEmploymentRecord")
-// 		newKeyboard.AddInlineKeyboardButton("Неполучении пособия до 1,5 лет", "Сertificate15years")
-// 		newKeyboard.AddInlineKeyboardButton("Неполучении пособия до 3 лет", "Сertificate3years")
-// 		newKeyboard.AddInlineKeyboardButton("Неполучении единовременного пособия", "СertificateNonReceipt")
-// 		newKeyboard.AddInlineKeyboardButton("О заработке для расчета пособий", "СertificateForBenefits")
-
-// 		mess.Text = reqEmp.Data.IO + ", ваш номер телефона подтвержден"
-// 		ba.SendMessage(mess)
-
-// 		mess.Text = "Выберите тип требуемой справки"
-// 		mess.AddKeyboard(newKeyboard)
-// 	} else {
-// 		mess.Text = "Ваш номер телефона не найден в системе, добавьте его в личном кабинете или обратитесь в отдел кадров"
-// 	}
-
-// 	println(reqEmp.Data.IO)
-
-// } else if messageType == "Text" {
-// 	mess.Text = `Действие не распознано, нажмите /start`
-// }
-
-// ba.SendMessage(mess)
-
-// }
+	return keyboard
+}

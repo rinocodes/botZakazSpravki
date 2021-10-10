@@ -12,6 +12,8 @@ type orderDetails struct {
 	EmployeeGUID string
 	PhoneNumber  string
 	IO           string
+	Certificate  string
+	Quantity     int
 }
 
 type UserCache struct {

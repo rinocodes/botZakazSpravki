@@ -147,19 +147,42 @@ func (bot *TeleGoBot) GetUpdates() IncomingMessages {
 
 func SendMessage(messageText string, userID int, keyboard interface{}) {
 
-	urlGetUpdates := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage?chat_id=%d&text=%s", pointbot.TeleToken, userID, messageText)
+	url := fmt.Sprintf("https://api.telegram.org/bot%s/sendMessage?chat_id=%d&text=%s", pointbot.TeleToken, userID, messageText)
 
 	if keyboard, ok := keyboard.(Keyboard); ok {
 		fmt.Println(keyboard)
 		replyMarkup, _ := json.Marshal(keyboard)
 		replyMarkupStr := string(replyMarkup)
-		urlGetUpdates = urlGetUpdates + "&reply_markup=" + replyMarkupStr
-		urlGetUpdates = strings.Replace(urlGetUpdates, `"keyboard":null,`, `"keyboard": [],`, -1)
-		urlGetUpdates = strings.Replace(urlGetUpdates, `"inline_keyboard":null`, `"inline_keyboard": []`, -1)
+		url = url + "&reply_markup=" + replyMarkupStr
+		url = strings.Replace(url, `"keyboard":null,`, `"keyboard": [],`, -1)
+		url = strings.Replace(url, `"inline_keyboard":null`, `"inline_keyboard": []`, -1)
 	}
 
-	fmt.Println(string(urlGetUpdates))
-	resp, err := pointbot.Client.Get(urlGetUpdates)
+	resp, err := pointbot.Client.Get(url)
+
+	if err != nil {
+		log.Fatalln(err)
+	}
+	body, _ := ioutil.ReadAll(resp.Body)
+	fmt.Println(string(body))
+	defer resp.Body.Close()
+
+}
+
+func EditMessage(messageText string, userID int, keyboard interface{}, messageID int) {
+
+	url := fmt.Sprintf("https://api.telegram.org/bot%s/editMessageText?chat_id=%d&message_id=%d&text=%s", pointbot.TeleToken, userID, messageID, messageText)
+
+	if keyboard, ok := keyboard.(Keyboard); ok {
+		fmt.Println(keyboard)
+		replyMarkup, _ := json.Marshal(keyboard)
+		replyMarkupStr := string(replyMarkup)
+		url = url + "&reply_markup=" + replyMarkupStr
+		url = strings.Replace(url, `"keyboard":null,`, `"keyboard": [],`, -1)
+		url = strings.Replace(url, `"inline_keyboard":null`, `"inline_keyboard": []`, -1)
+	}
+
+	resp, err := pointbot.Client.Get(url)
 
 	if err != nil {
 		log.Fatalln(err)
@@ -172,9 +195,9 @@ func SendMessage(messageText string, userID int, keyboard interface{}) {
 
 func DeleteMessage(userID, messageID int) {
 
-	urlGetUpdates := fmt.Sprintf("https://api.telegram.org/bot%s/deleteMessage?chat_id=%d&message_id=%d", pointbot.TeleToken, userID, messageID)
+	url := fmt.Sprintf("https://api.telegram.org/bot%s/deleteMessage?chat_id=%d&message_id=%d", pointbot.TeleToken, userID, messageID)
 
-	resp, err := pointbot.Client.Get(urlGetUpdates)
+	resp, err := pointbot.Client.Get(url)
 
 	if err != nil {
 		log.Fatalln(err)
