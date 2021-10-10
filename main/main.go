@@ -2,13 +2,11 @@ package main
 
 import (
 	"fmt"
-	"io/ioutil"
 	"log"
-	"net/http"
 	"os"
-	"strconv"
 	"strings"
 
+	zkgurequest "bot/ZKGURequest"
 	"bot/cache"
 	"bot/telegobot"
 
@@ -68,6 +66,7 @@ func Start(messageType string, messageData string, userID int, messageID int, me
 			OrganizationStr := strings.Replace(messageData, "Organization", "", 1)
 			userCache := cache.SetUserCache(userID)
 			userCache.UserData.Organization = OrganizationStr
+			cache.SaveUserCache(userID, userCache)
 			messageText := `Добрый день, уважаемые коллеги!` +
 				`%0AДля получения доступа к функциям чат-бота, потвердите личность, нажав на кнопку "Отправить номер телефона"` +
 				`%0A%0AКнопка находится под строкой ввода сообщения` +
@@ -83,7 +82,12 @@ func Start(messageType string, messageData string, userID int, messageID int, me
 	case "contact":
 		if userCache != nil {
 			userCache.UserData.PhoneNumber = messageData
-			SetEmployeeDataFromZKGU(userID, userCache.UserData.PhoneNumber)
+			cache.SaveUserCache(userID, userCache)
+			details, ok := zkgurequest.SetEmployeeDataFromZKGU(userID, userCache.UserData.PhoneNumber)
+			if !ok {
+				telegobot.SendMessage(details, userID, nil)
+				return
+			}
 
 			keyboard := telegobot.NewKeyboard()
 			keyboard.AddInlineButtonBelow("Справка с места работы", "СertificateFromThePlaceOfWork")
@@ -211,30 +215,6 @@ func Start(messageType string, messageData string, userID int, messageID int, me
 	// }
 
 	// ba.SendMessage(mess)
-
-}
-
-func SetEmployeeDataFromZKGU(userID int, phoneNumber string) (string, bool) {
-
-	login := os.Getenv("loginZKGU")
-	password := os.Getenv("passwordZKGU")
-	url := os.Getenv("urlZKGU")
-
-	client := &http.Client{}
-	req, _ := http.NewRequest("GET", url, nil)
-	req.SetBasicAuth(login, password)
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("Phonenumber", phoneNumber)
-	req.Header.Set("userid", strconv.Itoa(userID))
-	resp, _ := client.Do(req)
-
-	body, _ := ioutil.ReadAll(resp.Body)
-	defer resp.Body.Close()
-
-	// incomingMessages.()["result"]
-	fmt.Println(string(body))
-
-	return "ok", true
 
 }
 

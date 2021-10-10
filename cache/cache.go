@@ -11,6 +11,7 @@ type orderDetails struct {
 	Organization string
 	EmployeeGUID string
 	PhoneNumber  string
+	IO           string
 }
 
 type UserCache struct {
@@ -59,6 +60,30 @@ func SetUserCache(userID int) *UserCache {
 	// }
 
 	return &newUserCache
+
+}
+
+func SaveUserCache(userID int, userCache *UserCache) {
+
+	cache := pointerToCache
+
+	cache.Lock()
+	defer cache.Unlock()
+
+	cache.UserCache[userID] = *userCache
+
+	// cache := Cache{
+	// 	items:             items,
+	// 	defaultExpiration: defaultExpiration,
+	// 	cleanupInterval:   cleanupInterval,
+	// }
+
+	// // Если интервал очистки больше 0, запускаем GC (удаление устаревших элементов)
+	// if cleanupInterval > 0 {
+	// 	cache.StartGarbageCollection() // данный метод рассматривается ниже
+	// }
+
+	// return &newUserCache
 
 }
 

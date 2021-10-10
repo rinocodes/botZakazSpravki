@@ -57,7 +57,6 @@ func NewBot(timeoutinseconds int) *TeleGoBot {
 
 	bot := TeleGoBot{}
 	bot.Client.Timeout, _ = time.ParseDuration(fmt.Sprintf("%ds", timeoutinseconds))
-	// bot.DefaultText = "default text"
 	pointbot = &bot
 	return &bot
 }
@@ -141,7 +140,6 @@ func (bot *TeleGoBot) GetUpdates() IncomingMessages {
 	var incomingMessages IncomingMessages
 	json.Unmarshal([]byte(body), &incomingMessages)
 
-	// incomingMessages.()["result"]
 	fmt.Println(string(body))
 	return incomingMessages
 
